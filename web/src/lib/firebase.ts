@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAiH_ymd1xifNgWRLF_FqFSJloVOkn7whE",
-  authDomain: "bottomup-1cb62.firebaseapp.com",
-  projectId: "bottomup-1cb62",
-  storageBucket: "bottomup-1cb62.appspot.com",
-  messagingSenderId: "233935259074",
-  appId: "1:233935259074:web:129d929bd2926f97d1c25b",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -25,7 +25,7 @@ export function getGmailToken(): string | null {
 // ── Phone Auth OTP via Identity Toolkit REST API ──
 // Uses Firebase Identity Toolkit directly to avoid reCAPTCHA Enterprise issues
 
-const API_KEY = firebaseConfig.apiKey;
+const API_KEY = import.meta.env.VITE_FIREBASE_API_KEY || "";
 let sessionInfo: string | null = null;
 
 export async function sendPhoneOtp(phoneNumber: string): Promise<boolean> {
