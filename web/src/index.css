@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* BottomUP Design Tokens */
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+
+  /* Backgrounds */
+  --color-background: #0B0C14;
+  --color-foreground: #e8edf5;
+  --color-card: rgba(255, 255, 255, 0.02);
+  --color-card-foreground: #e8edf5;
+  --color-popover: #0B0C14;
+  --color-popover-foreground: #e8edf5;
+
+  /* Brand colors */
+  --color-primary: #F97316;
+  --color-primary-foreground: #fff;
+  --color-violet: #7B5CF5;
+  --color-cobalt: #E8650C;
+
+  /* Secondary / Muted */
+  --color-secondary: rgba(255, 255, 255, 0.04);
+  --color-secondary-foreground: #e8edf5;
+  --color-muted: rgba(255, 255, 255, 0.04);
+  --color-muted-foreground: rgba(255, 255, 255, 0.65);
+  --color-accent: rgba(255, 255, 255, 0.07);
+  --color-accent-foreground: #e8edf5;
+
+  /* Status */
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #fff;
+  --color-success: #2DC771;
+  --color-warning: #F5C842;
+
+  /* Borders & Surfaces */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-input: rgba(255, 255, 255, 0.04);
+  --color-ring: #F97316;
+  --color-surface1: rgba(255, 255, 255, 0.04);
+  --color-surface2: rgba(255, 255, 255, 0.07);
+  --color-surface3: rgba(255, 255, 255, 0.10);
+
+  /* Text hierarchy */
+  --color-text: #e8edf5;
+  --color-text2: rgba(255, 255, 255, 0.65);
+  --color-text3: rgba(255, 255, 255, 0.40);
+  --color-text4: rgba(255, 255, 255, 0.25);
+
+  --radius: 0.625rem;
+
+  /* Sidebar */
+  --color-sidebar: #080910;
+  --color-sidebar-foreground: rgba(255, 255, 255, 0.55);
+  --color-sidebar-active: #F97316;
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(123, 92, 245, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(123, 92, 245, 0.6); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Utility classes */
+.animate-fadeUp { animation: fadeUp 0.5s ease-out forwards; }
+.animate-pulse-dot { animation: pulse-dot 2s infinite; }
+.animate-glow { animation: glow 2s infinite; }
+.font-mono { font-family: "Space Mono", monospace; }
+.gradient-text {
+  background: linear-gradient(135deg, #E8650C, #F97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.gradient-accent {
+  background: linear-gradient(90deg, #E8650C, #F97316 50%, #7B5CF5);
+}
+.gradient-btn {
+  background: linear-gradient(135deg, #E8650C, #F97316);
+}
