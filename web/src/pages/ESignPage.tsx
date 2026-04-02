@@ -230,9 +230,9 @@ export default function ESignPage() {
   }, [pdfFile, signerName, signerEmail, mutate]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <FileSignature className="h-5 w-5 text-[#F97316]" /> E-Sign
@@ -308,19 +308,20 @@ export default function ESignPage() {
             return (
               <div
                 key={doc.id}
-                className="rounded-lg border p-4 flex items-center gap-4"
+                className="rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center gap-3"
                 style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium truncate">{doc.originalName}</p>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
                       <StatusIcon className="inline h-3 w-3 mr-1" />
                       {config.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                    <span>To: {doc.signerName} ({doc.signerEmail})</span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
+                    <span>To: {doc.signerName}</span>
+                    <span className="hidden sm:inline">({doc.signerEmail})</span>
                     <span>Created: {new Date(doc.createdAt).toLocaleDateString()}</span>
                     {doc.completedAt && <span className="text-green-400">Signed: {new Date(doc.completedAt).toLocaleDateString()}</span>}
                   </div>
