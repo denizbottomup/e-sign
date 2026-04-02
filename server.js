@@ -21,5 +21,5 @@ app.get("*", (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`E-Sign server running on port ${PORT}`);
+  console.log(`Seçim Vekaleti sunucusu ${PORT} portunda çalışıyor`);
 });
