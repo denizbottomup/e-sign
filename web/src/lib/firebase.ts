@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
@@ -12,54 +12,60 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-auth.useDeviceLanguage();
 
-// ── Firebase Phone Auth OTP ──
+// ── Phone Auth OTP via Identity Toolkit REST API ──
+// Direct REST API — no RecaptchaVerifier needed
+// Works because phoneEnforcementState is set to OFF in Identity Platform
 
-let recaptchaVerifier: RecaptchaVerifier | null = null;
-let confirmationResult: ConfirmationResult | null = null;
-
-export function setupRecaptcha(containerId: string) {
-  if (recaptchaVerifier) {
-    try { recaptchaVerifier.clear(); } catch {}
-  }
-  recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-    size: "invisible",
-  });
-}
+const API_KEY = import.meta.env.VITE_FIREBASE_API_KEY || "";
+let sessionInfo: string | null = null;
 
 export async function sendPhoneOtp(phoneNumber: string): Promise<boolean> {
-  if (!recaptchaVerifier) {
-    throw new Error("RecaptchaVerifier henüz hazır değil");
+  const resp = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=${API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phoneNumber }),
+    }
+  );
+  const data = await resp.json();
+  if (data.error) {
+    const msg = data.error.message || "OTP gönderilemedi";
+    if (msg.includes("TOO_MANY_ATTEMPTS")) {
+      throw new Error("Çok fazla deneme yapıldı. Lütfen birkaç dakika bekleyin.");
+    }
+    if (msg.includes("INVALID_PHONE_NUMBER")) {
+      throw new Error("Geçersiz telefon numarası.");
+    }
+    throw new Error(msg);
   }
-  try {
-    confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-    return true;
-  } catch (e: unknown) {
-    console.error("[Firebase] OTP gönderim hatası:", e);
-    // Reset for retry
-    try { recaptchaVerifier.clear(); } catch {}
-    recaptchaVerifier = null;
-    throw e;
-  }
+  sessionInfo = data.sessionInfo;
+  return true;
 }
 
 export async function verifyPhoneOtp(code: string): Promise<boolean> {
-  if (!confirmationResult) {
-    throw new Error("Önce OTP gönderin");
+  if (!sessionInfo) {
+    throw new Error("Önce doğrulama kodu gönderin");
   }
-  try {
-    await confirmationResult.confirm(code);
-    return true;
-  } catch {
-    throw new Error("Geçersiz doğrulama kodu");
+  const resp = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key=${API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionInfo, code }),
+    }
+  );
+  const data = await resp.json();
+  if (data.error) {
+    const msg = data.error.message || "";
+    if (msg.includes("INVALID_CODE") || msg.includes("CODE_EXPIRED")) {
+      throw new Error("Geçersiz veya süresi dolmuş doğrulama kodu.");
+    }
+    throw new Error(msg || "Doğrulama başarısız");
   }
+  return true;
 }
 
-export function clearRecaptcha() {
-  if (recaptchaVerifier) {
-    try { recaptchaVerifier.clear(); } catch {}
-    recaptchaVerifier = null;
-  }
-  confirmationResult = null;
-}
+export function setupRecaptcha(_containerId: string) {}
+export function clearRecaptcha() { sessionInfo = null; }
