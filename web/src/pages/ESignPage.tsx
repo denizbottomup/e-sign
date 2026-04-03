@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 import { swrFetcher, apiPost, apiDelete } from "@/lib/api";
-import { getFreshGmailToken } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   FileSignature,
@@ -17,7 +15,6 @@ import {
   ExternalLink,
   Eye,
   RefreshCw,
-  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,19 +23,14 @@ interface VekaletDoc {
   fileName: string;
   originalName: string;
   signerName: string;
-  signerEmail: string;
   signerPhone: string;
   tcKimlikNo: string;
-  smsSent?: boolean;
   status: "awaiting_signer" | "completed";
   signerSigned: boolean;
   signingToken: string;
   signingUrl: string;
   createdAt: string;
   completedAt: string | null;
-  completionEmailPending?: boolean;
-  completionEmailSent?: boolean;
-  inviteEmailSent?: boolean;
 }
 
 const STATUS_CONFIG = {
@@ -52,60 +44,29 @@ export default function ESignPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [signerName, setSignerName] = useState("");
-  const [signerEmail, setSignerEmail] = useState("");
   const [signerPhone, setSignerPhone] = useState("");
   const [tcKimlikNo, setTcKimlikNo] = useState("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Auto-send completion emails for pending docs
-  useEffect(() => {
-    const pending = docs.filter(d => d.completionEmailPending && !d.completionEmailSent);
-    if (pending.length === 0) return;
-
-    (async () => {
-      const token = await getFreshGmailToken();
-      if (!token) return;
-      for (const doc of pending) {
-        apiPost(`/esign/${doc.id}/send-completion`, { gmailToken: token })
-          .then(() => {
-            toast.success(`İmzalı "${doc.originalName}" belgesi taraflara e-posta ile gönderildi`);
-            mutate();
-          })
-          .catch(() => {});
-      }
-    })();
-  }, [docs, mutate]);
-
   const handleCreate = async () => {
-    if (!pdfFile || !signerName || (!signerEmail && !signerPhone)) return;
+    if (!pdfFile || !signerName || !signerPhone) return;
     setCreating(true);
     try {
       const reader = new FileReader();
       reader.onload = async () => {
         const base64 = (reader.result as string).split(",")[1];
 
-        const gmailToken = await getFreshGmailToken();
         const resp = await apiPost("/esign/create", {
           fileBase64: base64,
           fileName: pdfFile.name,
           signerName,
-          signerEmail,
           signerPhone,
           tcKimlikNo,
-          gmailToken,
-        }) as { document: VekaletDoc; emailSent: boolean; smsSent: boolean };
+        }) as { document: VekaletDoc };
 
-        if (resp.smsSent) {
-          toast.success(`İmza linki SMS ile ${signerPhone} numarasına gönderildi!`);
-        } else if (resp.emailSent) {
-          toast.success(`İmza daveti ${signerEmail} adresine gönderildi!`);
-        } else {
-          toast.success("Vekalet oluşturuldu! İmza linki panoya kopyalandı.");
-        }
         setShowCreate(false);
         setSignerName("");
-        setSignerEmail("");
         setSignerPhone("");
         setTcKimlikNo("");
         setPdfFile(null);
@@ -113,7 +74,7 @@ export default function ESignPage() {
 
         const link = `${window.location.origin}${resp.document.signingUrl}`;
         navigator.clipboard.writeText(link).then(() => {
-          toast.info("İmza linki panoya kopyalandı!");
+          toast.success("Vekalet oluşturuldu! İmza linki panoya kopyalandı.");
         });
       };
       reader.readAsDataURL(pdfFile);
@@ -217,7 +178,6 @@ export default function ESignPage() {
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
                     <span>Kişi: {doc.signerName}</span>
                     {doc.signerPhone && <span>{doc.signerPhone}</span>}
-                    {doc.signerEmail && <span className="hidden sm:inline">({doc.signerEmail})</span>}
                     {doc.tcKimlikNo && <span>TC: {doc.tcKimlikNo}</span>}
                     <span>Oluşturulma: {new Date(doc.createdAt).toLocaleDateString("tr-TR")}</span>
                     {doc.completedAt && <span className="text-green-400">İmzalandı: {new Date(doc.completedAt).toLocaleDateString("tr-TR")}</span>}
@@ -232,47 +192,12 @@ export default function ESignPage() {
 
                   {/* İmza linkini kopyala */}
                   {doc.status !== "completed" && (
-                    <Button size="sm" variant="ghost" onClick={() => {
+                    <Button size="sm" variant="outline" className="gap-1 text-blue-400 border-blue-400/30" onClick={() => {
                       navigator.clipboard.writeText(signingLink);
                       toast.success("İmza linki kopyalandı!");
                     }} title="İmza linkini kopyala">
-                      <ExternalLink className="h-4 w-4" />
+                      <ExternalLink className="h-3.5 w-3.5" /> Linki Kopyala
                     </Button>
-                  )}
-
-                  {/* Davet gönder / tekrar gönder */}
-                  {doc.status === "awaiting_signer" && (
-                    <Button size="sm" variant="outline" className="gap-1 text-blue-400 border-blue-400/30" onClick={async () => {
-                      const token = await getFreshGmailToken();
-                      if (!token) { toast.error("Gmail erişimi gerekli"); return; }
-                      try {
-                        await apiPost(`/esign/${doc.id}/resend-invite`, { gmailToken: token });
-                        toast.success(`Davet ${doc.signerEmail} adresine gönderildi`);
-                        mutate();
-                      } catch { toast.error("Davet gönderilemedi"); }
-                    }}>
-                      <Send className="h-3.5 w-3.5" /> {doc.inviteEmailSent ? "Tekrar Gönder" : "Davet Gönder"}
-                    </Button>
-                  )}
-
-                  {/* Tamamlama e-postası gönder */}
-                  {doc.status === "completed" && !doc.completionEmailSent && (
-                    <Button size="sm" variant="outline" className="gap-1 text-blue-400 border-blue-400/30" onClick={async () => {
-                      const token = await getFreshGmailToken();
-                      if (!token) { toast.error("Gmail erişimi gerekli — lütfen tekrar giriş yapın"); return; }
-                      try {
-                        const resp = await apiPost(`/esign/${doc.id}/send-completion`, { gmailToken: token }) as { sent: number; total: number };
-                        toast.success(`İmzalı belge ${resp.sent}/${resp.total} tarafa e-posta ile gönderildi`);
-                        mutate();
-                      } catch { toast.error("E-posta gönderilemedi"); }
-                    }}>
-                      <Mail className="h-3.5 w-3.5" /> E-posta Gönder
-                    </Button>
-                  )}
-                  {doc.completionEmailSent && (
-                    <Badge variant="outline" className="text-xs text-blue-400 border-blue-400/30">
-                      <Mail className="h-3 w-3 mr-1" /> Gönderildi
-                    </Badge>
                   )}
 
                   {/* Sil */}
@@ -301,7 +226,7 @@ export default function ESignPage() {
               <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
             </div>
 
-            {/* Adım 1: PDF Yükle */}
+            {/* PDF Yükle */}
             <div>
               <label className="text-sm font-medium text-muted-foreground">Vekalet Belgesi (PDF) *</label>
               <div className="mt-1 rounded-lg border-2 border-dashed p-6 text-center" style={{ borderColor: pdfFile ? "rgba(30,58,95,0.3)" : "rgba(255,255,255,0.1)" }}>
@@ -322,21 +247,15 @@ export default function ESignPage() {
               </div>
             </div>
 
-            {/* Adım 2: İmzacı bilgileri */}
+            {/* İmzacı bilgileri */}
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Adı Soyadı *</label>
                 <Input value={signerName} onChange={e => setSignerName(e.target.value)} placeholder="Ahmet Yılmaz" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Telefon Numarası *</label>
-                  <Input value={signerPhone} onChange={e => setSignerPhone(e.target.value)} placeholder="+90 5XX XXX XX XX" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">E-posta Adresi</label>
-                  <Input value={signerEmail} onChange={e => setSignerEmail(e.target.value)} placeholder="ahmet@ornek.com" />
-                </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Telefon Numarası *</label>
+                <Input value={signerPhone} onChange={e => setSignerPhone(e.target.value)} placeholder="+90 5XX XXX XX XX" />
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">TC Kimlik No</label>
@@ -344,13 +263,13 @@ export default function ESignPage() {
               </div>
             </div>
 
-            {/* Gönder */}
+            {/* Oluştur */}
             <Button
               className="w-full bg-[#1e3a5f] hover:bg-[#162d4a] text-white"
-              disabled={!pdfFile || !signerName || (!signerEmail && !signerPhone) || creating}
+              disabled={!pdfFile || !signerName || !signerPhone || creating}
               onClick={handleCreate}
             >
-              {creating ? "Oluşturuluyor..." : "Oluştur ve İmza Linki Gönder"}
+              {creating ? "Oluşturuluyor..." : "Oluştur ve İmza Linki Al"}
             </Button>
           </div>
         </div>

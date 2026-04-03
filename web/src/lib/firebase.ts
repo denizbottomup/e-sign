@@ -13,15 +13,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Gmail token stub (kept for backwards compat with email sending)
-export async function getFreshGmailToken(): Promise<string | null> {
-  return sessionStorage.getItem("gmail_token");
-}
-
-export function getGmailToken(): string | null {
-  return sessionStorage.getItem("gmail_token");
-}
-
 // ── Phone Auth OTP via Identity Toolkit REST API ──
 // Uses Firebase Identity Toolkit directly to avoid reCAPTCHA Enterprise issues
 
