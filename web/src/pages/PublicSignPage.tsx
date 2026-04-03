@@ -29,6 +29,11 @@ export default function PublicSignPage() {
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const recaptchaReady = useRef(false);
 
+  // Signer info fields (Vekil Tayin Eden bilgileri)
+  const [formAdSoyad, setFormAdSoyad] = useState("");
+  const [formBolumNo, setFormBolumNo] = useState("");
+  const [formTarih, setFormTarih] = useState(new Date().toLocaleDateString("tr-TR"));
+
   // Signature
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -59,6 +64,7 @@ export default function PublicSignPage() {
         setDoc(data.document);
         setPdfUrl(data.pdfUrl || "");
         setSignerDisplayName(data.document.signerName);
+        setFormAdSoyad(data.document.signerName);
         if (data.alreadySigned) { setPageState("already_signed"); return; }
 
         if (data.document.requiresOtp) {
@@ -288,7 +294,11 @@ export default function PublicSignPage() {
       const resp = await fetch(`/api/esign/sign/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signature, signatureType: useTypedSig ? "typed" : "drawn" }),
+        body: JSON.stringify({
+          signature,
+          signatureType: useTypedSig ? "typed" : "drawn",
+          formFields: { adSoyad: formAdSoyad, bolumNo: formBolumNo, tarih: formTarih },
+        }),
       });
       const data = await resp.json();
       if (!data.ok) throw new Error(data.error);
@@ -517,6 +527,46 @@ export default function PublicSignPage() {
             </div>
           </div>
         )}
+
+        {/* Vekil Tayin Eden Bilgileri */}
+        <div className="bg-white rounded-xl border p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#1e3a5f]" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Vekil Tayin Eden Bilgileri</h2>
+          </div>
+          <p className="text-sm text-gray-500">Lütfen aşağıdaki bilgileri doldurun. Bu bilgiler belgeye işlenecektir.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Adı ve Soyadı *</label>
+              <input
+                type="text"
+                value={formAdSoyad}
+                onChange={e => setFormAdSoyad(e.target.value)}
+                placeholder="Adınız Soyadınız"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-800 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bağımsız Bölüm No</label>
+              <input
+                type="text"
+                value={formBolumNo}
+                onChange={e => setFormBolumNo(e.target.value)}
+                placeholder="Örn: 12"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-800 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 outline-none"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tarih</label>
+            <input
+              type="text"
+              value={formTarih}
+              onChange={e => setFormTarih(e.target.value)}
+              className="w-full sm:w-1/2 rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-800 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 outline-none"
+            />
+          </div>
+        </div>
 
         <div ref={sigAreaRef} className="bg-white rounded-xl border p-5 sm:p-6 shadow-sm space-y-5">
           <div className="flex items-center gap-2">
