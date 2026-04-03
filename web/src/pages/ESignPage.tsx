@@ -14,6 +14,7 @@ import {
   Trash2,
   ExternalLink,
   Eye,
+  Download,
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -190,6 +191,16 @@ export default function ESignPage() {
                   {/* PDF Görüntüle */}
                   <Button size="sm" variant="ghost" onClick={() => window.open(`/api/esign/pdf/${doc.id}`, "_blank")} title="PDF Görüntüle">
                     <Eye className="h-4 w-4" />
+                  </Button>
+
+                  {/* PDF İndir */}
+                  <Button size="sm" variant="ghost" title="PDF İndir" onClick={() => {
+                    const a = document.createElement("a");
+                    a.href = `/api/esign/pdf/${doc.id}`;
+                    a.download = doc.originalName || `${doc.id}.pdf`;
+                    a.click();
+                  }}>
+                    <Download className="h-4 w-4" />
                   </Button>
 
                   {/* İmza linkini kopyala */}
