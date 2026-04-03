@@ -44,13 +44,15 @@ export default function ESignPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [signerName, setSignerName] = useState("");
-  const [signerPhone, setSignerPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+90");
+  const [phoneLocal, setPhoneLocal] = useState("");
   const [tcKimlikNo, setTcKimlikNo] = useState("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
-    if (!pdfFile || !signerName || !signerPhone) return;
+    const signerPhone = countryCode + phoneLocal.replace(/^0+/, "").replace(/\s/g, "");
+    if (!pdfFile || !signerName || !phoneLocal) return;
     setCreating(true);
     try {
       const reader = new FileReader();
@@ -67,7 +69,7 @@ export default function ESignPage() {
 
         setShowCreate(false);
         setSignerName("");
-        setSignerPhone("");
+        setPhoneLocal("");
         setTcKimlikNo("");
         setPdfFile(null);
         mutate();
@@ -255,7 +257,32 @@ export default function ESignPage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Telefon Numarası *</label>
-                <Input value={signerPhone} onChange={e => setSignerPhone(e.target.value)} placeholder="+90 5XX XXX XX XX" />
+                <div className="flex gap-2">
+                  <select
+                    value={countryCode}
+                    onChange={e => setCountryCode(e.target.value)}
+                    className="h-9 rounded-md border bg-transparent px-2 text-sm min-w-[100px]"
+                    style={{ borderColor: "rgba(255,255,255,0.15)" }}
+                  >
+                    <option value="+90">🇹🇷 +90</option>
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="+49">🇩🇪 +49</option>
+                    <option value="+33">🇫🇷 +33</option>
+                    <option value="+31">🇳🇱 +31</option>
+                    <option value="+46">🇸🇪 +46</option>
+                    <option value="+43">🇦🇹 +43</option>
+                    <option value="+32">🇧🇪 +32</option>
+                    <option value="+7">🇷🇺 +7</option>
+                    <option value="+380">🇺🇦 +380</option>
+                    <option value="+30">🇬🇷 +30</option>
+                    <option value="+359">🇧🇬 +359</option>
+                    <option value="+40">🇷🇴 +40</option>
+                    <option value="+994">🇦🇿 +994</option>
+                    <option value="+995">🇬🇪 +995</option>
+                  </select>
+                  <Input className="flex-1" value={phoneLocal} onChange={e => setPhoneLocal(e.target.value)} placeholder="5XX XXX XX XX" />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">TC Kimlik No</label>
@@ -266,7 +293,7 @@ export default function ESignPage() {
             {/* Oluştur */}
             <Button
               className="w-full bg-[#1e3a5f] hover:bg-[#162d4a] text-white"
-              disabled={!pdfFile || !signerName || !signerPhone || creating}
+              disabled={!pdfFile || !signerName || !phoneLocal || creating}
               onClick={handleCreate}
             >
               {creating ? "Oluşturuluyor..." : "Oluştur ve İmza Linki Al"}
